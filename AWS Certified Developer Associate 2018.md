@@ -937,9 +937,205 @@ What is Kinesis?
 
 
 
-## 7.5. Other AWS Services
+# 8. Developer Theory
+
+### CI/CD
+
+What is CI/CD?
+
+* CI and CD are best practices for software development and deployment
+* They enable frequent software changes to be applied whilst maintaining systems and service stability
+* Companies like AWS, Netflix, Google and FB have pioneered this approach to releasing code, successfully applying thousands of changes per day
 
 
 
+CI Workflow
+
+* Multiple developers working on features or bug features, all sharing the same repository and all contributing to the same application, frequently pushing their updates to the repo
+* The code repo would be integrated with a build management system where code changes trigger an automated build
+* However, we need a way to ensure that any code changes does not break the build or introduce new bugs into the application
+  * The test system runs automated tests on the newly built application, identifies any bugs, which prevents any issues from being introduced into the master code
+* CI focuses on small code changes which frequently are committed to the main repository once they have been successfully tested 
 
 
+
+Continuous Delivery / Continuous Deployment
+
+* CD can mean either of the two above
+* Continuous Delivery is a development practice where merged changes are automatically built, tested, and prepared for release into staging and eventually production environments
+  * There is usually a manual decision process to initiate deployment of the new code
+* Continuous Deployment  takes the idea of automation one step further and automatically deploys the new code following successful testing, eliminating any manual steps
+  * The new code is automatically released as soon as it passes through the stages of your release process (build, test, package)
+  * Small changes are released early and frequently
+* Both practices require the build, test and deployment processes to be fully automated but continuous deployment also automates the release process as well 
+
+![Screen Shot 2018-09-15 at 12.46.03](/Users/brandonpickup/Desktop/AWS_Developer/Diagrams/Screen Shot 2018-09-15 at 12.46.03.png) 
+
+
+
+AWS Services
+
+* CodeCommit
+  * Allows you to create your own private git repo within AWS, managed source control service
+* CodeBuild
+  * Fully managed build service which can compile source code, run basic tests and creates software packages that are ready to deploy into your environment
+* CodeDeploy
+  * Can deploy code to EC2 instances, lambda functions and even servers in your  data centre
+* CodePipeline
+  * Continuous deployment service that allows you to store, visualise and automate your entire release process
+
+
+
+###### Exam Tips
+
+* Worth reading the whipper on DevOps and practicing CI/CD
+* Continuous integration is about integrating or merging the code changes frequently, at least once per day, and enables multiple devs to work on the same application
+* Continuous delivery is all about automating the build, test and deployment functions
+* Continuous deployment fully automates the entire release process, code is deployed into production as soon as it has successfully passed through the release pipeline
+* CodeCommit- source control service (git)
+* CodeBuild - compile source code, run tests and package code
+* CodeDeploy - automated deployment to EC2, on premises systems and Lambda
+* CodePipeline - CI/CD workflow tool, fully automates the entire release process (build, test, deployment)
+
+
+
+### CodeCommit
+
+* Fully managed source control service that enables companies to host secure and highly scalable private git repositoires
+* Git is an industry standard open source distributed source control system:
+  * centralised repo for all your code, binaries, images and libraries
+  * tracks and manages code changes
+  * maintains version history
+  * manages updates from multiple sources
+  * enables collaboration
+* CodeCommit provides all of the functionality of git
+* Your data is encrypted in transit and at rest (commits to the remote are done by ssh or https)
+
+###### Exam Tips
+
+* Based on git
+* Centralized repo for all your code, binaries, images and libraries 
+* Tracks and manages code changes
+* Maintains version history
+* Maintains updates from multiple sources and enables collaboration
+
+
+
+### CodePipeline
+
+* CIs a fully managed continuous integration and continuous delivery service
+* It can orchestrate the build, test and even deployment of your application every time there is a change to your code - all based on a user defined software release process
+* Traditional manual approaches to code delivery can be sow and prone to errors, whereas an automated process allows developers to frequently release new features and bug fixes in a fast and reliable way
+* It allows you to model your release process as a workflow or pipeline of different tasks
+  * You define what happens and where for each of the different stages of the workflow, and this can be modelled using CodePipeline GUI or CLI
+  * Every code change pushed to your code repository automatically enters the workflow and triggers the set of actions defined for each stage of the pipeline
+  * The pipeline automatically stops if one of the stages fails  
+* It integrates with CodeCommit, CodeBuild, CodeDeploy, Lambda, ElasticBeanstalk, CloudFormation, Elastic Container Service as well as third party tools like GitHub and Jenkins
+
+###### Exam Tips
+
+* CodePipeline is a CI/CD service
+* It automates your end-to-end software release process based on a user defined workflow
+* It can be configured to automatically trigger your pipeline as soon as change is detected in your source code repo
+* Integrates with other services from AWS like CodeBuild and CodeDeploy, as well as third party and custom plug-ins
+
+
+
+### AppSpec File - Lambda Deployments
+
+* The AppSpec file is used to define the parameters that will be used for a CodeDeploy deployment. 
+* The file structure depends on whether you are deploying to Lambda or EC2 or On Premises
+* For lambda deployments, the AppSpec file may be written in YAML or JSON and contains the following fields:
+  * **version** - reserved for future use, currently the only allowed value is 0.0
+  * **resources** - the name and properties of the lambda function to deploy
+  * **hooks** - specifies lambda functions to run at set points in the deployment lifecycle to validate the deployment, e.g. validation tests to run before allowing traffic to be sent to your newly deployed instances
+
+![Screen Shot 2018-09-15 at 17.46.04](/Users/brandonpickup/Desktop/AWS_Developer/Diagrams/Screen Shot 2018-09-15 at 17.46.04.png)
+
+ 
+
+Hooks:
+
+* **BeforeAllowTraffic**
+  * used to specify the tasks or functions you want to run before traffic is routed to the newly deployed lambda function (e.g. test to validate that the function has been deployed correctly)
+* **AfterAllowTraffic**
+  * used to specify the tasks or functions you want to run after the traffic has been routed to the newly deployed lambda function (e.g. test to validate that the function is accepting traffic correctly and behaving as expected)
+
+
+
+The AppSpec file looks different for EC2 and On Premises deployments and contains the following fields:
+
+* **version** - reserved for future use, currently the only allowed value is 0.0
+* **os** - the OS version you are using, e.g. linux / windows
+* **files** - the location of any application files that need to be copied and where they should be copied to (source and destination folders)
+* **hooks** - lifecycle event hooks allow you to specify scripts that need to run at set points in the deployment lifecycle (e.g. to unzip application files prior to deployment, run functional tests on the newly deployed application, and to de-register and re-register instances with a load balancer)
+
+
+
+For EC2 and On Premises deployments, the app spec.yml must be placed in the **root directory of your revision** - this is the director continuing your application source code, otherwise the deployment will fail
+
+Typical setup looks like this:
+
+* mywebapp folder:
+  * appspec.yml
+  * /Scripts
+  * /Config
+  * /Source
+
+
+
+![Screen Shot 2018-09-15 at 17.54.36](/Users/brandonpickup/Desktop/AWS_Developer/Diagrams/Screen Shot 2018-09-15 at 17.54.36.png)
+
+![Screen Shot 2018-09-15 at 17.55.24](/Users/brandonpickup/Desktop/AWS_Developer/Diagrams/Screen Shot 2018-09-15 at 17.55.24.png)
+
+
+
+Supported hooks for EC2 and On Premises
+
+* **BeforeBlockTraffic**
+  * run tasks on instances before they are deregistered from a load balancer
+* **BlockTraffic**
+  * deregister instances from a load balancer
+* **AfterBlockTraffic**
+  * run tasks on instances after they are deregistered from a load balancer 
+* **ApplicationStop**
+  * gracefully stop the application for deploying the new revision
+* **DownloadBundle**
+  * the CodeDeploy agent copies the application revision files to a temporary location
+* **BeforeInstall**
+  * details of any pre-installation scripts, e.g. backing up the current version, decrypting files
+* **Install**
+  * the CodeDeploy agent copies the application revision files from their temp location to their current location
+* **AfterInstall**
+  * details of any post-installation scripts, e.g. config tasks, changing file permissions etc.
+* **ApplicationStart**
+  * restarts any services that were stopped during ApplicationStop
+* **ValidateService**
+  * details of any tests to validate the service
+* **BeforeAllowTraffic**
+  * run tasks on instances before they are registered with a load balancer
+* **AllowTraffic**
+  * register instances with a load balancer
+* **AfterAllowTraffic**
+  * run tasks on instances after they are registered with a load balancer
+
+
+
+***Remember the order of these!
+
+
+
+###### Exam Tips
+
+* The AppSpec file defines all the parameters needed for the deployment e.g. location of application files and ore/post deployment validation tests to run
+* For EC2 / On Premises systems, the appspec.yml file must be placed in the root directory of your revision (the same folder that contains your application code). It is written in YAML
+* Lambda supports YAML or JSON
+* The run order for hooks in a CodeDeploy deployment:
+  * BeforeBlockTraffic --> BlockTraffic --> AfterBlockTraffic
+  * ApplicationStop
+  * BeforeInstall
+  * Install
+  * AfterInstall
+  * ApplicationStart
+  * ValidateService
+  * BeforeAllowTraffic --> AllowTraffic --> AfterAllowTraffic
