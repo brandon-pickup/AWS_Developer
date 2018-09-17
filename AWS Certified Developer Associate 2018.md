@@ -1072,7 +1072,7 @@ The AppSpec file looks different for EC2 and On Premises deployments and contain
 
 
 
-For EC2 and On Premises deployments, the app spec.yml must be placed in the **root directory of your revision** - this is the director continuing your application source code, otherwise the deployment will fail
+For EC2 and On Premises deployments, the appspec.yml must be placed in the **root directory of your revision** - this is the director continuing your application source code, otherwise the deployment will fail
 
 Typical setup looks like this:
 
@@ -1139,3 +1139,39 @@ Supported hooks for EC2 and On Premises
   * ApplicationStart
   * ValidateService
   * BeforeAllowTraffic --> AllowTraffic --> AfterAllowTraffic
+
+
+
+### Docker and CodeBuild 
+
+* Docker is an open source tech that allows you to create applications based on either Linux or Windows containers 
+  * A container is a lightweight standalone executable software package which includes everything the software needs to run - code, runtime environment, libraries, environment settings, etc. 
+* AWS provides Elastic Container Service as a fully managed clustered platform which allows you to run your Docker images in the cloud
+* AWS CodeBuild is a fully managed build service which runs a set of commands that you define, e.g. compiles code, runs tests and produces artefacts that are ready to deploy
+* buildspec.yml is a file that describes how to build the docker file etc., basically automates the whole process that you want CodeBuild to run on your behalf that will build your docker image
+  * it is optional, you are able to also do this within the GUI editor to insert build commands
+
+
+
+###### Exam Tips
+
+* Docker allows you to package up your software into containers which you can run in ECS
+* A Docker Container includes everything the software needs to run including code, libraries, runtime and env variables 
+* We use a special file called a Dockerfile to specify the instructions needed to assemble your Docker image
+* Once build, Docker images can be stored in the ECR and ECS can use then use the image to launch Docker containers on your ECS cluster
+* Docker commands to build, tag (apply an alias) and push your Docker image to the ECR repo
+  * docker build -t myimagerepo
+  * docker tag myimagerepo:latest 725350006743.dkr.ecr.eu-central-1.amazonaws.com/myimagerepo:latest
+  * docker push 725350006743.dkr.ecr.eu-central-1.amazonaws.com/myimagerepo:latest
+* Use  build spec.yml to define the build commands and settings used by CodeBuild to run your build
+* You can override the settings in build spec.yml by adding your own commands in the console when you launch the build
+* If your build fails, check the logs in the CodeBuild consoles and you can also view the full CodeBuild log in CloudWatch
+
+
+
+### Developer Theory Summary
+
+* AWS CodeDeploy is a fully managed automated deployment service and can be used as part of the CI/CD process
+* Remember the different types of deployment approaches:
+  * **In-Place or Rolling update** - you stop the application on each host and deploy the latest code. EC2 and on premise systems only, To roll back you must re-deploy the previous version of the application. Will obviously have down time
+  * **Blue / Green** - new instances are provisioned and the new applications is deployed o these new instances. Traffic is routed to the instances according to your own schedule. Supported for EC2, on premise systems and Lambda functions. Roll back is easy, just route the traffic back to the original instances. Blue is the active deployment, green is the new release
