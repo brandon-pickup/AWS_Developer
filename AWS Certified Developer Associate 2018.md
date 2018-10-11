@@ -1,4 +1,10 @@
-# 4. Intro to Serverless Computing
+# 4. S3
+
+### S3 101
+
+* 
+
+# 5. Intro to Serverless Computing
 
 ### Brief history
 
@@ -82,12 +88,12 @@ Why Lambda?
   * millions of functions running in parallel at the same time. However there is potential for running out of memory
 * Functions are independent, 1 event = 1 function
 * Lambda is serverless (also it is a compute service)
-* Know whatservices are serverless: API Gateway, S3, DynamoDB
-  * RDS, EC2 not serverless
+* Know what services are serverless: API Gateway, S3, DynamoDB
+  * RDS, Beanstalk, EC2 not serverless
 * Lambda functions can trigger other lambda functions, i.e. 1 event can = x functions if there are triggers on other functions
-* AWS xray can help debug what is happening
+* AWS X-Ray can help debug what is happening
 * Can do things globally, it is not stuck in one specific region. i.e. you can back up S3 buckets into other S3 buckets
-* Know your triggers
+* Know your triggers***
 
 
 
@@ -166,10 +172,144 @@ An API is and Aplication Programming Interface
   * i.e. the waiter that is going to take your order
 * API Gateway has caching capabilities to increase performance
 * It is low cost and scales automatically
-* You can throttle API Gateway to prevent attacks
+* You can throttle API Gateway to prevent attacks (Amazon do that automatically anyway)
 * You can log results to CLoudWatch
 * If you are using Javascript/AJAX that uses multiple domains with API Gateway, ensure that you have enable CORS 
 * CORS is enforced by the client
+
+
+
+### Version Control with Lambda
+
+When you use version in AWS Lambda, you can publish one or more versions of your Lambda function. As a result, you can work with different variations of your Lambda function in your development workflow, such as development, beta and production versions
+
+Each Lambda function version has a unique ARN. After you publish a version, it is immutable 	
+
+
+
+Qualified/Unqualified ARNs
+
+* You can refer to this function using its ARN. There are 2 ARNs associated with this initial version
+  * Qualified ARN - the function ARN with the version suffix
+    * i.e. arn:aws:lambda:aws-region:acct-id:function:helloworld:$LATEST
+  * Unqualified ARN - the function ARN without the version suffix
+    * i.e. arn:aws:lambda:aws-region:acct-id:function:helloworld
+
+
+
+Alias
+
+* After initially creating a Lambda function (the $LATEST version), you can publish a version 1 of it
+* By creating an alias named PROD that points to version 1, you can now use the PROD alias to invoke version 1 of the Lambda function
+* Now you can update the code (the $LATEST version) with all of your improvements, and then publish another stable improved version (version 2)
+* You can promote version 2to production by remapping the PROD alias so that it points to version 2
+* If you find something wrong, you can easily roll back the production version to version 1 by remapping the PROD alias so that it points to version 1 
+
+
+
+###### Exam Tips
+
+* Can have multiple versions of lambda functions
+* Latest version will use $LATEST
+* Qualified version will use arn+$LATEST, unqualified will not have it (i.e. it will just be the arn)
+* Versions are immutable (cannot be changed)
+* Can split traffic using aliases to different versions
+  * cannot split traffic with $LATEST, instead create an alias to latest
+
+### Polly to help with Exam
+
+Create a skill on Alexa site - it's epic!
+
+### Step Functions
+
+Step functions allow you to visualise and test your server less applications
+
+* they provide a graphical console to arrange and visualise the components of your application as a multistep series of steps
+* this makes it simple to build and run multistep applications
+* step functions automatically triggers and tracks each step, and retries when there are error, so your application executes in order and as expected
+* step functions logs the state of each step, so when things do go wrong, you can diagnose and debug problems quickly
+
+
+
+Create them using JSON Amazon states language
+
+
+
+### X-Ray
+
+X-Ray is a service that collects data about requests that your application serves, and provides tools you can use to view, filter, and gain insights into that data to identify issues and opportunities for optimization
+
+* For any traced request to your application, you can see detailed information not only about the request and the response, but also about the calls that your application makes to downstream AWS resources, micro services, databases and HTTP web APIs
+* Way of visualising your serverless application
+
+
+
+How it works
+
+* Your application, within the X-ray SDK, will send messages to the X-Ray Daemon
+* Daemon listens on UDP, takes the data and sends it to the X-Ray API 
+* API stores all of this data and then creates a sort of visualisation of it all in the X-Ray Console
+* We can also have our normal scripts and tools that communicate with the API or Daemon directly
+
+
+
+The X-Ray SDk provides:
+
+* Inetrceptors to add to your code to trace incoming HTTP requests
+* Client handlers to instrument AWS SDK clients that your application uses to call other AWS services
+* An HTTP client to use to instrument calls to other internal and external HTTP web services 
+
+The X-Ray integrates with the following AWS services:
+
+* Elastic Load Balancing
+* AWS Lambda
+* Amazon API Gateway
+* Amazon Elastic Cloud Compute (EC2)
+* AWS Elastic Beanstalk 
+
+Supported languages:
+
+* Java
+* Go
+* Node.js
+* Python
+* Ruby
+* .Net
+
+
+
+### Advanced API Gateway
+
+You can use the **API Gateway Import** API feature t import an API from an external definition file into API Gateway
+
+* Currently, the Import API feature supports Swagger v2.0 definition files
+
+With the Import API, you can either create a new API by submitting a POST request that includes a Swagger definition in the payload and endpoint configuration, or you can update an existing API by using a PUT request that contains a Swagger definition in the payload
+
+* You can update an API by overwriting it with a new definition, or merge a definition with an existing API
+* You specify the options using a mode query parameter in the request URL
+
+
+
+API Throttling
+
+* By default, API Gateway limits the steady-state request rate to 10,000 requests per second (rps)
+* The maximum concurrent requests is 5000 request across all APIs within an AWS account
+* If you go over 10,000 requests per second or 5000 concurrent requests you will receive a **429 Too Many Request** error response 
+* Example
+  * If a caller submits 10,000 requests in a one second period evenly (for example 10 requests every millisecond), API Gateway processes all requests without dropping any
+  * If the caller sends 10,000 requests in the first millisecond, API Gateway serves 5,000 of those requests and throttles the rest in the one-second period
+  * If the caller submits 5,000 requests in the first millisecond and then evenly spreads another 5000 requests through the remaining 999 milliseconds (for example, about 5 requests every millisecond), API Gateway processes all 10,000 requests in the one-second period without return 429 error responses
+
+SOAP Webservice Passthrough
+
+* You can configure API Gateway as a SOAP web service passthrough 
+
+
+
+### Serverless Summary
+
+See exam tips above!
 
 
 
@@ -1169,9 +1309,179 @@ Supported hooks for EC2 and On Premises
 
 
 
+### CloudFormation
+
+* it is a service that allows you to manage, configure, and provision your AWS infrastructure as code
+* resources are defined using a CloudFormation template
+* CloudFormation interprets the template and makes the appropriate API calls to create resources that you have defined
+* supports YAML or JSON
+
+
+
+Benefits
+
+* Infrastructure is provisioned consistently, with fewer mistakes (i.e. removing likely human error)
+* Less time and effort than configuring things manually
+* You can version control and peer review your templates
+* Free to use (charged for what you create)
+* Can be used to manage updates and dependencies
+* Can be used to rollback and delete the entire stack as well
+
+
+
+CloudFromation Template
+
+* YAML or JSON templates are used to describe the end state of the infrastructure you are either provisioning or changing
+* After creating the template, you upload it to CloudFormation using S3
+* CloudFomration reads the template and makes the API calls on your behalf
+* The resulting resources are called a stack
+* **Resources** is the only mandatory section of the CloudFormation template
+* Remember that the **Transform **section is used to reference additional code stored in S3, allowing for code re-use e.g. for Lambda code or template snippets / reusable pieces of CloudFormation code
+
+
+
+###### CloudFormation Exam Tips
+
+* CloudFormation allows you to manage, configure, and provision AWS infrastructure as code (YAML or JSON)
+* Remember the main section  in the CloudFormation template:
+  * Parameters: input custom values
+  * Conditions: e.g. provision resources based on environemnt
+  * Resources: mandatory, the AWS resources to create
+  * Mappings: create custom mappings like Region:AMI
+  * Transforms: reference code located in S#, e.g. Lambda code or reusable snippets of CloudFormation code
+
+
+
+### Serverless Application Model
+
+* SAM is an extension to CloudFormation used to define serverless applications 
+* Simplified syntax for defining server less resources: APIs. Lambda Functions, DynaoDB tables etc.
+* Use the SAM CLI to package your deployment code, upload it to S3 and deploy your server less application
+
+
+
+SAM CLI Commands
+
+* sam package (packages your app and uploads a deployment file to S3)
+  * --template file
+  * --output-template-file
+  * --s3-bucket
+* sam deploy (deploys your server less app using Cloud Formation)
+  * --template-file
+  * --stack-name
+  * --capabilities
+
 ### Developer Theory Summary
 
 * AWS CodeDeploy is a fully managed automated deployment service and can be used as part of the CI/CD process
 * Remember the different types of deployment approaches:
   * **In-Place or Rolling update** - you stop the application on each host and deploy the latest code. EC2 and on premise systems only, To roll back you must re-deploy the previous version of the application. Will obviously have down time
   * **Blue / Green** - new instances are provisioned and the new applications is deployed o these new instances. Traffic is routed to the instances according to your own schedule. Supported for EC2, on premise systems and Lambda functions. Roll back is easy, just route the traffic back to the original instances. Blue is the active deployment, green is the new release
+
+
+
+# 9. Advanced IAM
+
+### Web Identity Federation
+
+* lets you give your users access to AWS resources after they have successfully authenticated with a web-based identity provider like Amazon, Facebook or Google
+* Following successful authentication, the user receives an authentication code from the Web ID provider, which they can trade for temporary AWS security credentials
+
+Amazon Cognito provides web identity federation with the following features:
+
+* sign-up and sign0in to your apps
+* access for guest users
+* acts as an identity broker between your application and Web ID providers, so you don't need to write any additional code
+* synchronises user data for multiple devices
+* recommended for all mobile applications AWS services
+
+Cognito is the recommended approach for web identity federation using social media accounts like FB
+
+* e.g. a mobile shopping application which stores user, product and order data in S3 and DynamoDB
+* Cognito brokers between the app an FB and Google to provide temporary credentials which map to an IAM role allowing access to the required resources
+* this means that there is no need for applications to embed or store AWS credentials locally on the device and it gives users a seamless experience across al mobile devices 
+
+###### Exam Tips
+
+* Federation allows users to authenticate with a web identity provider (Google, FB, Amazon)
+* The user authenticates first with the web ID provider and requires an authentication token which is exchanged for temporary AWS credentials allowing them to assume an IAM role
+* Cognito is an Identity Broker which handles interaction between your applications and the Web ID Provider (you don't need to write your own code to do this)
+  * provides sign-up, sign-in, and guest user access
+  * syncs user data for a seamless experience across your devices
+  * Cognito is the AWS recommended approach for Web Identity Federation particularly for mobile apps
+
+
+
+### Cognito User Pools
+
+User pools are user directories used to manage sign-up and sign-in functionality for mobile and web applications
+
+* Users can sign-in directly to the **User Pool**, or indirectly via an identity provider like FB, Amazon or Google
+* Cognito acts as an Identity Broker between the ID provider and AWS
+* Successful authentication generates a number of JSON Web tokens (JWTs)
+
+Identity pools enable your to create unique identities for your users and authenticate them with identity providers
+
+* with an identity, you can obtain temporary, limited-privilege AWS credentials to access other AWS services
+
+
+
+Push Synchronisation
+
+* Cognito tracks the association between user identity and the various different devices they sign-in from
+* In order to provide seamless user experience for your application, Cognito uses **Push Synchronisation** to push updates and synchronise user data across multiple devices
+* Amazon SNS is used to send a silent push notification to all devices associated with a given user identity whenever data stored in the cloud changes
+
+
+
+### Inline vs Managed vs Custom Policies 
+
+IAM is used to define user access to permissions within AWS. There are 3 different types of IAM policies available:
+
+* **Managed Policies**
+  * IAM policy which is created and administered by AWS
+  * Provided for common use cases based on job function e.g. AmazonDynamoDBFullAccess, AWSCodeCommitPowerUser, AmazonEC2ReadOnlyAccess etc.
+  * These allow you to assign appropriate permissions to your users groups and roles without having to write the policy yourself
+  * A single managed policy can be applied to multiple users, groups or roles within the same AWS account and across different accounts
+  * You **cannot change the permissions** defined in an AWS managed policy
+* **Customer Managed Policies**
+  * This is a standalone policy that you create and administer inside your own AWS account 
+  * You can attach this policy to multiple users, groups and roles - but only within your own account
+  * In order to create a customer managed policy, you can copy an existing AWS managed policy to customise it to fit the requirements of your organisation
+  * Recommended for use cases where the existing AWS managed policies do not meet the needs of your environment
+* **Inline Policies** 
+  * IAM policy which is embedded within the user group or roles to which it applies
+  * Has a strict 1:1 relationship between the entity and the policy 
+  * When you delete the user, group or role in which the inline policy is embedded, the policy will also be deleted
+  * In most cases, AWS recommends using managed policies over inline policies
+  * These are useful when you want to be sure that the permissions in a policy are not inadvertently assigned to any other users group or role than the one for which it is intended (i.e. you are creating a policy that must only ever be attached to a single user, group or role)
+
+
+
+###### Exam Tips
+
+* Remember the different types of IAM policies:
+* * Managed policy -  AWS managed default policies
+  * Customer managed policy - Managed by your
+  * Inline policy - Managed by you and the embedded i a single user, group or role
+* In most cases, AWS recommends using managed policies over inline policies
+
+ 
+
+# Useful Nuggets
+
+Valid triggers for AWS Lambda are:
+
+* API Gateway
+* AWS IoT
+* Alexa Skills Kit
+* Alexa Smart Home
+* CloudFront
+* CloudWatch Events
+* CloudWatch Logs
+* CodeCommit
+* Cognito Sync Trigger
+* DynamoDB
+* Kinesis
+* S3
+* SNS
