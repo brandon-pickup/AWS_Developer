@@ -1,8 +1,389 @@
+# 3. EC2
+
+### RDS 101
+
+Relational Database Service
+
+
+
+What is a Relational Database?
+
+* Tables, rows, fields (columns) etc.
+
+
+
+Relational Database Types instances you can provision within RDS
+
+* SQL Server
+* Oracle
+* MySQL Server
+* PostgreSQL
+* Aurora (AWS flagship technology)
+* MariaDB
+
+
+
+Non relational Databases
+
+* Database
+  * Collection (basically a table)
+  * Document (like a row in a table)
+  * Key-value pairs (like fields)
+
+
+
+What is Data Warehousing?
+
+* Used for business intelligence. Tools like Congnos, Jaspersoft, SQL Server Reporting Services, Oracle Hyperion, and SAP NetWeaver 
+* Used to pull in very large and complex data sets. Usually used by management to do queries on data (such as current performance vs targets etc.)
+
+
+
+OLTP vs OLAP
+
+* Online Transaction Processing (OLTP) differs from Online Analytics Processing (OLAP) in terms of the types of queries you will run
+  * OLTP are your standard queries
+  * OLAP are usually far more complex 
+
+
+
+What is Elasticache?
+
+* This is a web service that makes it easy to deploy, operate, and scale an in-memory cache in the cloud. 
+* The service improves the performance of web applications by allowing you to retrieve information from fast, managed, in-memory caches instead of relying entirely on slower disk-based databases
+* Elasticache supports two open-source in-memory caching engines:
+  * Memcached
+  * Redis
+
+
+
+AWS Database Types - Summary
+
+* RDS - OLTP	
+  * SQL, MySQL, PostgreSQL, Oracle, Aurora, MariaDB
+* DynamoDB - No SQL
+* RedShift - OLAP
+* Elasticache - In-memory caching:
+  * Memcached
+  * Redis
+
+
+
+### RDS - Back Ups, Multi-AZ and Read Replicas
+
+There are two types of Backups for AWS: **Automated Backups and Database Snapshots**
+
+* Automated backups allow you to recover your database to any point in time within a "retention period".
+  * the retention period can be between one and 35 days
+  * automated backups will take a full daily snapshot and will also store transaction logs throughout the day
+* When you do a recovery, AWS will first choose the most recent daily backup and then apply transaction logs relevant to that day - this allows you to do a point in time recovery down to a second, within the retention period
+* Automated backups are enabled by default
+  * the backup data is stored in S3 and you get free stroage space equal to the size of your database (so if you have an RDS instance of 10gb, you will get 10gb worth of storage)
+* Backups are taken within a defined window
+  * during the backup window, storage I/O may be suspended while your data is being backed up and you may experience elevated latency
+* Snapshots are done manually (i.e. they are user initiated)
+  * they are stored even after you delete the original RDS instance, unlike automated backups
+* Restoring backups
+  * Whenever you restore either an automatic backup or a manual snapshot, the restored version of the database will be a new RDS instance with a **new DNS endpoint**
+* Encryption
+  * Encryption at rest is supported for MySQL, ORacle, SQL Server, PostgreSQL, MariaDB & Aurora
+  * Encryption is done using the AWS Key Management Service (KMS)
+  * Once your RDS instance is encrypted, the data stored at rest in the underlying storage is encrypted, as are its automated backups, read replicas and snapshots
+  * At the present time, encrypting an existing DB instance is not supported
+  * **To use RDS encryption for an existing database, you must first create a snapshot, make a copy of that snapshot and encrypt the copy**
+
+
+
+What is Multi-AZ?
+
+* Allows you to have an exact copy of your production database in another AZ
+* AWS handles the replication for you, so when your production DB is written to, this write will automatically be synchronized to the standby database
+* In the event of a planned db maintenance, DB Instance failure, or an AZ failure, Amazon RDS will automatically failover to the standby so that database operations can resume quickly without administrative intervention
+* **It is for disaster recovery only!**
+  * It is not primarily used for improving performance --> performance improvements would have you need Read Replicas
+* Available for the following DBs:
+  * SQL Server
+  * Oracle
+  * MySQL Server
+  * PostgreSQL
+  * MariaDB
+  * Aurora is there by default
+* Multi-AZ is synchronous, Read Replicas are async
+
+
+
+What is a Read Replica?
+
+* Allow you to have a read-only copy of your production database
+* Achieved by using an async replication from the primary RDS instance to this read replica
+* You would use read replicas primarily for very read-heavy database workloads
+* You can have up to 5 read replicas per database 
+* You can also have read replicas of read replicas (but be careful of latency here)
+  * Each read replica will have it's own DNS endpoint
+* You can have read replicas that have multi-AZ
+* You can create read replicas of multi-AZ source databases
+* It is a way of **improving performance** and**scaling out** your database so different EC2 instances for example can read from different replicas
+  * takes the load off of the one db
+* Available for the following dbs:
+  * MySQL Server
+  * PostgreSWL
+  * MariaDB
+  * Aurora
+* Used for scaling, not disaster recovery (use multi-AZ for this)!
+* You need to have automatic backups turned on in order to deploy a read replica
+* Read replicas can be promoted to become their own databases, but this breaks the replication
+* You can have a read replica in a separate region
+
+
+
+### Elasticache 101
+
+What is it?
+
+* Elasticache is a web service that makes it easy to deploy, operate and scale an in-memory cache in the cloud
+* The service improves the performance of web applications by allowing you to retrieve information from fast, managed, in-memory caches instead of relying entirely on slower disk-based databases 
+* Can be used to **significantly improve latency and throughput** for many **read-heavy application workloads** (such as social networking, gaming, media sharing and Q&A portals) **or compute-intensive workloads** (such as recommendation engines)
+* Caching improves application performance by storing critical pieces of data in memory for low-latency access
+* Cached information may include the results of I/O intensive database queries or the results of computationally-intensive calculations
+
+
+
+Types of Elasticache
+
+* Memcached
+  * a widely adopted memory object caching system
+  * Elasticache is protocol compliant with Memcached, so popular tools that you use today with existing Memcached environments will work seamlessly with the service
+  * Use this one if you are not concerned with redundancy
+* Redis
+  * a popular open-source in-memory key-value store that supports data structures such as sorted sets and lists
+  * Elasticache supports Master / Slave replication and multi-AZ which can be used to achieve cross AZ redundancy
+* Although both appear similar on the surface (in that they are both in-memory key stores), they are actually quite different in practice
+  * Because of the replication and persistence features of Redis, Elasticache manages Redis more as an RDB
+    * Redis Elasticache clusters are managed as stateful entities that include failover, similar to how Amazon RDS manages database failover
+  * Because Memcached is designed as a pure caching solution with no persistence, Elasticache manages Memcached nodes as a pool that can grow and shrink, similar to an Amazon EC2 Auto Scaling Group
+    * Individual nodes are expendable, and Elasticache provides additional capabilities here, such as automatic node replacement and auto discovery
+
+
+
+Memcached Use Cases
+
+* Is object caching your primary goal, for example to offload your database? If so, use Memcached
+* Are you interested in as simple a caching model as possible? If so, use Memcached
+* Are you planning on running large cache nodes, and require multithreaded performance with utilization of multiple cores? If so, use Memcached
+* Do you want the ability to scale your cache horizontally as you grow? If so, use Memcached
+
+
+
+Redis Use Cases
+
+* Are you looking for more advanced data types, such as lists, hashes and sets? If so, use Redis
+* Does sorting and ranking datasets in memory help you, such as with leaderboards? If so, use Redis
+* Is persistence of your key store important? If so, use Redis
+* Do you want to run in multiple AWS Availability Zones with failover? If so, use Redis
+
+
+
+Elasticache is a good choice if your database is particularly read-heavy and not prone to frequent changing
+
+* Redshift is a good answer if the reason your database is feeling stress is because management keep running OLAP transactions on it etc. (Good answer if it is more of a data warehousing question)
+
+
+
+Use Memcached if:
+
+* Object caching is your primary goal
+* You want to keep things as simple as possible
+* You want to scale your cache horizontally (scale out)
+
+Use Redis if:
+
+* You have advanced data types, such as lists, hashes and sets
+* You are doing data sorting and ranking (such as leader boards)
+* Data Persistence
+* Multi AZ
+* Pub/Sub capabilities are needed
+
+
+
 # 4. S3
 
 ### S3 101
 
-* 
+* Secure, durable, highly-scalable **object storage**
+  * files can be 0 bytes to 5TB
+  * unlimited storage
+  * Files are stored in buckets (similar to a folder)
+* Data is spread across multiple devices and facilities
+* S3 has a universal namespace, so the name of a bucket must be unique globally 
+* Upon uploading a code to S3, you will receive a HTTP 200 code to indicate that the upload was successful
+
+Data Consistency Model for S3
+
+* **Read after Write consistency** for PUTS of new Objects
+* **Eventual Consistency** for overwrite PUTS and DELETES (can take some time to propagate)
+
+S3 is a simple key-value store
+
+* Key (this is simply the name of the object)
+* Value (this is simply the data, which is made up of a sequence of bytes)
+* Version ID (Important for versioning)
+* Metadata (data about the data you're storing - you can add your own metadata)
+* Sub resources - bucket specific config: things like Bucket Policies, ACLs, Transfer Acceleration (speeds up uploads to S3) and CORS
+
+The Basics:
+
+* Built for 99.99% availability for the S3 platform
+* Amazon guarantee 99.9% availability 
+* Amazon guarantee 99.999999999% durability for S3 information
+* Tiered storage is available
+* Lifecycle management
+* Versioning
+* Encryption
+* Secure data using ACLs and Bucket policies
+
+
+
+### Storage Tiers
+
+* Normal S3: 99.99% availability, 99.999999999% durability, stored redundantly across multiple devices in multiple facilities and is designed to sustain the loss of 2 facilities concurrently
+* S3-IA (Infrequently Accessed): For data that is accessed less frequently, but requires rapid access when needed. Lower fee than S3, but you are charged a retrieval fee for any object retrieved
+* S3 - One Zone IA: Same as IA however data is stored in a single AZ only, still 99.999999999% durability, but only 99.5% availability. Cost is 20% less than regular S3-IA (Not resilient to the loss of the AZ)
+* Reduced Redundancy Storage: Designed to provide 99.99% durability and 99.99% availability of objects over a given year. Used for data that can be recreated if lost e.g. thumbnails (This feature is starting to disappear from AWS docs). Used to be cheapest but AWS now recommend you use regular S3
+* Glacier: Very cheap but for archival only. It is optimized for data that is infrequently accessed as it takes 3-5hrs to restore from Glacier
+
+Charged for:
+
+* Storage per GB
+* Requests (Get, Put, Copy, etc.)
+* Storage management pricing
+  * inventory, analytics, and object tags
+* Data management pricing
+  * data transferred out of S3
+* Transfer acceleration (uses CloudFront)
+
+
+
+### S3 Security
+
+* By default, all newly created buckets are PRIVATE
+  * You can set up access control to your buckets using:
+    * Bucket policies: applied at a bucket level
+    * Access Control Lists: Applied at an object level
+  * S3 buckets can be configured to create access logs, which log all requests made to the S3 buckets. These logs can be written to another bucket
+
+### S3 Policies
+
+* Types of encryption available: AES-256 and AWS-KMS which are both server-side encryption 
+* By default, only the owner has read & write access
+* ACLs are at an object level rather than a bucket level
+* Bucket Policies are at a bucket level, written in JSON
+
+
+
+### S3 Encryption
+
+* IN transit encryption
+  * Done using SSL/TLS,  typically HTTPS to access files
+* At rest encryptions
+  * Server side encryptions:
+    * S3 managed keys (**SSE-S3**): Each object is encrypted with it's own unique key using strong multi-factor auth with the key used for encrypting also encrypted with a master key. Sometimes called AES-256
+    * AWS Key Management Service, Managed Keys, **S3-KMS**
+      * Comes with an audit trail and an envelope key, you then have that view of the key use
+    * Server side encryption with customer provided keys - **SSE-C**
+      * You are in charge of the keys. AWS manage the encryption and decryption, but you are required to manage the rest, including things like key rotations etc.
+  * Client Side encryption
+    * you do this before upload
+* Enforcing encryption on S3 buckets
+  * Every time a file is uploaded to S3, a PUT request is initiated
+  * IF the file is to be encrypted at uploading time, the **x-amz-server-side-encryption parameter** will be included in th request header
+  * Two options are currently available:
+    * **x-amz-server-side-encryption: AES256 ** (SSE-S3 - S3 managed keys)
+    * **x-amz-server-side-encryption: ams:kms** (SSE-KMS - KMS managed keys)
+  * When this param is included in the header of the PUT request, it tells S3 to encrypt the object at the time of upload, using the specified encryption method
+  * You can enforce the use of Server Side Encryption by using a bucket policy which denies any S3 PUT request which does not include the **x-amz-server-side-encryption** parameter in the request header
+
+
+
+CORS controls access from one resource to another
+
+
+
+### CloudFront
+
+* A content delivery network (CDN) is a system of distributed servers (network) that deliver webpages and other web content to a user based on the geographic locations of the user, the origin of the webpage, and a content delivery server
+  * Basically a web service that speeds up the delivery of your static and dynamic web content 
+  * About enabling better performance regardless of where you are in the world
+* Makes use of edge locations that keep a cache of the data that can be requested from. Requests therefore only have to travel to the edge location
+* TTLs (max is 1yr, default is 24hrs, all done in s) are setup to clear the cache every so often (manual clears will cost)
+* Key Terminology
+  * **Edge Location** - this is the location where content is cached and can also be written. Separate to an AWS Region/AZ (way more edge locations)
+  * **Origin** - This is the origin of all the files that the CDN will distribute. Origins can be an S3 bucket, an EC2 instance , an Elastic Load Balancer, or Route53
+  * **Distribution** - This is the name given to the CDN, which consists of a collection of Edge Locations
+  * **Web Distribution** - typically used for websites
+  * **RTMP** - used for media streaming
+
+What is CloudFront?
+
+* Amazon CloudFront can be used to deliver your entire website, including dynamic, static, streaming and interactive content using a global network of edge locations
+* Requests for your content are automatically routed to the nearest edge location, so content is delivered with the best possible performance
+  * e.g. can be used to optimize performance for users accessing a website backed by S3
+* Optimized to work with other AWS services, like S3, EC2, Elastic Load Balancing, and Route53. It also works seamlessly with any non-AWS  origin server, which stores the original, definitive versions of your files
+
+CloudFront and S3 Transfer Acceleration
+
+* Amazon S3 Transfer Acceleration enables fast, easy and secure transfers of files over long distances between your end users and S3 bucket
+* Transfer Acceleration takes advantage of Amazon CloudFront's globally distributed edge locations. As the data arrives at an edge location, date is routed to Amazon S3, over an optimized network path
+
+Signed URLS / cookies ensure that only some people can access pages
+
+###### Exam Tips
+
+* Edge locations are not just READ only - you can WRITE to them too
+* Objects are cached for the life of the TTL
+* You can clear cached objects yourself at a cost (Called an invalidation)
+* You can restrict bucket access for requests to only come through CloudFront
+
+
+
+### S3 Performance Optimization
+
+S3 is designed to support very high request rates. However, if your S3 buckets are routinely receiving >100 PUT / LIST / DELETE or >300 GET requests per second, then there are some best practice guidelines that will help optimize S3 performance
+
+
+
+Guidance is based on the type of workload that you are running:
+
+* **GET-Intensive Workloads -** use CloudFront content delivery service to get best performance. CloudFront will cache your most frequently accessed objects and will reduce latency for your GET requests
+* **Mixed Request Type Workloads -** a mix of GET, PUT, DELETE, GET Bucket - the key names that you use for your objects can impact performance for intensive workloads
+  * S3 uses the key name to determine which partition an object will be stored in
+  * The use of sequential key names e.g. names prefixed with a timestamp or alphabetical sequence increases the likelihood of having multiple objects stored on the same partition
+  * For heavy workloads, this can cause I/O issues an contention
+  * By using a random prefix to key names, you can force S3 to distribute your keys across multiple partitions, distributing the I/O workload
+
+
+
+###### Optimization Summary
+
+* remember the 2 main approaches;
+  * GET-intensive workloads - use CloudFront
+  * Mixed-workloads - avoid sequential key names for your S3 objects. Instead, add a random prefix like a hex hash to the key name to prevent multiple objects being stored on the same partition
+
+
+
+S3 Performance Updates
+
+* In July 2018, Amazon announced a massive performance increase in S3 that completely negates the need for randomness to be included in the object keynames - any names can be used (even sequential) without any performance implication
+* S3 can now support 3500 put requests per second and 5500 get requests
+
+
+
+
+
+READ THE S3 FAQ!!!!!!!!
+
+
+
+
 
 # 5. Intro to Serverless Computing
 
@@ -1160,6 +1541,32 @@ AWS Services
 * Maintains updates from multiple sources and enables collaboration
 
 
+
+### Code Deploy
+
+* AWS CodeDeploy is an automated deployment service which allows you to deploy your application code automatically to EC2 instances, on-premise systems and Lambda functions
+* Allows you to quickly release new features, avoid downtime during application deployments, and avoid the risks associated with manual processes
+* Automatically scales with your infrastructure and integrates with various Ci?CD tools, e.g. Jenkins, GitHub, Atlassian, AWS CodePipeline as well as config management tools like Ansible, Puppet and Chef
+* Two deployment approaches are available:
+  * **In Place** and 
+    * The application is stopped on each instance and the latest revision is installed
+    * the instance is out of service during this time and your capacity will be reduced
+    * if the instances are behind a load balancer, you can configure the load balancer to stop sending requests to the instances which are being upgraded
+    * Also known as a rolling update
+    * it can only be used for EC2 and on-premise systems - it is not supported for Lambda
+    * if you need to roll back your changes, the previous version of the application will need to be re-deployed
+  * **Blue/Green**
+    * new instances are provisioned and the latest revision is installed on the new instances. Blue represents the active deployment, green is the new release
+    * the new instances are registered with an Elastic Load Balancer, traffic is then routed to the new instances and the original instances are eventually terminated
+    * advantages of the blue/green deployments are that the new instances can be created ahead of time and the code released to production by simply switching all traffic to the new instances
+    * switching back to the original environment is faster and more reliable and is just a case of routing traffic back to the original servers (as long as you have not already terminated them)
+* Terminology
+  * **Deployment Group** - a set of EC2 instances or Lambda functions to which a new revision of the software is to be deployed
+  * **Deployment** - the process and components used to apply a new revision
+  * **Deployment Configuration** - a set of deployment rules as well as success / failure conditions used during deployment
+  * **AppSpec File** - defines the deployment actions you want AWS CodeDeploy to execute
+  * **Revision** - everything needed to deploy the new version: AppSpec files, application files, executables and config files
+  * **Application** - unique identifier for the application you want to deploy. To ensure that the correct combination of revision, deployment configuration and deployment group are referenced during the deployment
 
 ### CodePipeline
 
